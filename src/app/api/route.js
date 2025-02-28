@@ -1,37 +1,55 @@
+import mongoose from "mongoose";
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 
- const users = [
-  {
-    id: 1,
-    email: "user@example.com",
-    password: "$2a$10$8cZo2R0vH60sJhVzOObA5OUcHjJvNppybGZYOquslv7sE2GGN.wQG", // bcrypt hash for "password123"
-  },
-];
+ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/moviesDB";
 
-const SECRET_KEY = "your_secret_key"; 
-
-export async function POST(req) {
+async function connectDB() {
+  if (mongoose.connection.readyState >= 1) return;
   try {
-    const { email, password } = await req.json();
-
-     const user = users.find((user) => user.email === email);
-    if (!user) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
-    }
-
-     const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
-    }
-
-     const token = jwt.sign({ id: user.id, email: user.email }, SECRET_KEY, {
-      expiresIn: "1h",
-    });
-
-    return NextResponse.json({ message: "Login successful", token }, { status: 200 });
+    await mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+    console.log("Database Connected");
   } catch (error) {
-    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+    console.error("Database Connection Error:", error);
+  }
+}
+
+ const movieSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  year: { type: String, required: true },
+  imageUrl: { type: String },
+});
+
+const Movie = mongoose.models.Movie || mongoose.model("Movie", movieSchema);
+
+ export async function GET() {
+  await connectDB();
+  try {
+    const movies = await Movie.find();
+    return NextResponse.json(movies);
+  } catch (error) {
+    return NextResponse.json({ error: "Error fetching movies" }, { status: 500 });
+  }
+}
+
+ export async function POST(req) {
+  await connectDB();
+  try {
+    const { title, year, imageUrl } = await req.json();
+    const newMovie = new Movie({ title, year, imageUrl });
+    await newMovie.save();
+    return NextResponse.json({ message: "Movie added successfully", movie: newMovie });
+  } catch (error) {
+    return NextResponse.json({ error: "Error adding movie" }, { status: 500 });
+  }
+}
+
+ export async function PUT(req) {
+  await connectDB();
+  try {
+    const { id, title, year, imageUrl } = await req.json();
+    const updatedMovie = await Movie.findByIdAndUpdate(id, { title, year, imageUrl }, { new: true });
+    return NextResponse.json({ message: "Movie updated", movie: updatedMovie });
+  } catch (error) {
+    return NextResponse.json({ error: "Error updating movie" }, { status: 500 });
   }
 }

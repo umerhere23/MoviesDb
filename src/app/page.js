@@ -39,8 +39,7 @@ export default function Login() {
         </form>
       </div>
 
-      {/* Background Layer at Bottom */}
-      <div className="absolute bottom-0 left-0 w-full">
+       <div className="absolute bottom-0 left-0 w-full">
         <Image src={Layer} alt="Layer Image" layout="responsive" width={1200} height={200} />
       </div>
     </div>

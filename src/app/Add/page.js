@@ -38,7 +38,7 @@ export default function CreateMovie() {
     };
 
     try {
-      const response = await fetch("/Add", {
+      const response = await fetch("/api/movies", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(movieData),
